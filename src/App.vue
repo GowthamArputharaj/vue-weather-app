@@ -26,14 +26,19 @@
             <div class="weather">{{ weather.weather[0].main }}</div>
         </div>
       </div>
-      <div>
+      <div class="hasShowMoreButton">
         <button class="showMoreButton" 
         v-on:click="doActions()" 
-        >Show More Content</button>
+        >{{ buttonText }}</button>
       </div>
-      <div v-if="Object.keys(this.weather).length > 1" class="showMore" :class="(this.view) ? 'show': 'hide'">
+      <div v-if="Object.keys(this.weather).length > 1 && this.view" class="showMore" :class="(this.view) ? 'show': 'hide'">
         <show-more :weather="this.weather"></show-more>
       </div>
+      
+      <div v-if="this.enterValidLocation" class="enterLocation" >
+        <h2>Please Enter Valid Location</h2>
+      </div>
+      
     </main>
   </div>
 </template>
@@ -53,23 +58,38 @@ export default {
       query: '',
       weather: {},
       className: '',
-      view: false
+      view: false,
+      buttonText: 'Show More Content',
+      enterValidLocation: false,
     }
   },
   methods: {
     fetchWeather (e) {
       if (e.key == "Enter") {
+        this.enterValidLocation = false;
+        this.buttonText = 'Show More Content';
+
         fetch(`${this.url_base}weather?q=${this.query}&units=metric&APPID=${this.api_key}`)
           .then(res => {
             return res.json();
           })
           .then(this.setResults)
-          .catch(err => console.log(err));
+          .catch(err => {
+            this.enterValidLocation = true;
+            console.log(err)
+          });
       }
     },
     setResults (results) {
       this.weather = results;
-      this.className = (this.weather.main.temp > 20) ? 'warm' : '';
+      if(this.weather && this.weather.main) {
+        this.className = (this.weather.main.temp > 20) ? 'warm' : '';
+        console.log('tempt is '+ results)
+        this.enterValidLocation = false;
+      } else {
+        this.enterValidLocation = true;
+        this.className = 'space';
+      }
     },
     dateBuilder () {
       let d = new Date();
@@ -82,11 +102,20 @@ export default {
       return `${day} ${date} ${month} ${year}`;
     },
     doActions() {
+        if(!this.enterValidLocation) {
+          this.view = (this.view == true) ? false : true
+          
+          if(this.view) {
+            this.buttonText = 'Show Less Content'
+          } else {
+            this.buttonText = 'Show More Content'
+          }
+
+          setTimeout(() => {
+            window.scrollTo(0, window.innerHeight + 50); 
+          }, 300);
+        }
         // v-on:click="() => this.view = (this.view == true) ? false : true" 
-        this.view = (this.view == true) ? false : true
-        setTimeout(() => {
-          window.scrollTo(0, window.innerHeight); 
-        }, 300);
     }
   }
 }
@@ -112,6 +141,9 @@ body {
 }
 #app.warm {
   background-image: url('./assets/weather-sunny.jpg');
+}
+#app.space {
+  background-image: url('./assets/space.jpg');
 }
 main {
   min-height: 100vh;
@@ -183,27 +215,36 @@ main {
 }
 .showMore {
   z-index: 10;
+  margin-bottom: 5rem;
+  box-sizing: border-box;
+}
+div.hasShowMoreButton {
+  width: 100vw;
 }
 .showMoreButton {
-  display: block;
-  width: 100%;
-  padding: 15px;
+  z-index: 11;
+  width: 95vw;
   
-  color: #313131;
+  padding: 15px 0;
+  margin-top: 1rem;
+  
   font-size: 20px;
   appearance: none;
   border:none;
   outline: none;
-  background: none;
-  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
   border-radius: 0px 16px 0px 16px;
-  transition: 0.4s;
-
-  margin: 5rem 0;
-  bottom: 0;
+  
   background:rgba(0, 0, 0, 0.75);
   color: white;
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25);
+
+  position: fixed;
+  left: 2.5vw !important;
+  bottom: 1rem !important;
+  display: block;
+
   cursor: pointer;
+  transition: 0.4s;
 }
 show-more {
   background:rgba(255, 255, 255, 0.25);
